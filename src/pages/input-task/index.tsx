@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import InputForm from "../../components/Input";
 import { useState, useEffect } from "react";
@@ -51,12 +51,13 @@ const InputPage = () => {
   useEffect(() => {
     fetchPriorityData();
     console.log(priority);
+    console.log("Tanggal: ", date);
   }, []);
 
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<Input>();
   const onSubmit: SubmitHandler<Input> = (data) => console.log(data);
@@ -74,45 +75,77 @@ const InputPage = () => {
                 {...register("task", { required: true })}
               />
               <span className="text-lg">Priority</span>
-              <Select>
-                <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {priority.map((prior) => (
-                    <SelectItem key={prior.priorityId} value={prior.priority}>
-                      {prior.priority}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="priority"
+                defaultValue="Low"
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priority.map((prior) => (
+                        <SelectItem
+                          key={prior.priorityId}
+                          value={prior.priority}
+                        >
+                          {prior.priority}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+
               <span className="text-lg">Deadline</span>
               <div className="flex flex-col gap-3">
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="date"
-                      className="w-full bg-black text-white justify-between font-normal"
-                    >
-                      {date ? date.toLocaleDateString() : "Select date"}
-                      <ChevronDownIcon />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-auto overflow-hidden p-0"
-                    align="start"
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      captionLayout="dropdown"
-                      onSelect={(date) => {
-                        setDate(date);
-                        setOpen(false);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Controller
+                  control={control}
+                  name="deadline"
+                  defaultValue={new Date().toLocaleDateString()}
+                  render={({ field }) => (
+                    <Popover open={open} onOpenChange={setOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="date"
+                          className="w-full bg-black text-white justify-between font-normal"
+                        >
+                          {date
+                            ? date.toLocaleDateString("en-US", {
+                                month: "2-digit",
+                                day: "2-digit",
+                                year: "numeric",
+                              })
+                            : new Date().toLocaleDateString("en-US", {
+                                month: "2-digit",
+                                day: "2-digit",
+                                year: "numeric",
+                              })}
+                          <ChevronDownIcon />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="start"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          captionLayout="dropdown"
+                          onSelect={(date) => {
+                            setDate(date);
+                            setOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+
                 <div className="w-full flex justify-center">
                   <Button className="bg-black w-48" type="submit">
                     Submit
