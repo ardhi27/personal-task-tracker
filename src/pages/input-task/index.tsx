@@ -1,16 +1,24 @@
 import { useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import InputForm from "../../components/Input";
+import { useState, useEffect } from "react";
 import Stack from "../../components/Stack";
-import * as React from "react";
 import { ChevronDownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import axios from "axios";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 enum PriorityEnum {
   high = "high",
@@ -24,9 +32,26 @@ type Input = {
   deadline: string;
 };
 
+interface PriorityProps {
+  priorityId: number;
+  priority: string;
+}
 const InputPage = () => {
-  const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [priority, setPriority] = useState<PriorityProps[]>([]);
+
+  const fetchPriorityData = async () => {
+    const response = await axios.get("http://localhost:3000/api/priority");
+    const data = response.data;
+    setPriority(data);
+    console.log(data);
+  };
+
+  useEffect(() => {
+    fetchPriorityData();
+    console.log(priority);
+  }, []);
 
   const {
     register,
@@ -35,6 +60,7 @@ const InputPage = () => {
     formState: { errors },
   } = useForm<Input>();
   const onSubmit: SubmitHandler<Input> = (data) => console.log(data);
+
   return (
     <div className="w-screen h-screen bg-black text-white">
       <div className="w-full flex justify-center h-full items-center">
@@ -48,11 +74,18 @@ const InputPage = () => {
                 {...register("task", { required: true })}
               />
               <span className="text-lg">Priority</span>
-              <InputForm
-                defaultValue="0"
-                className="w-full h-[2rem] p-3"
-                {...register("priority", { required: true })}
-              />
+              <Select>
+                <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priority.map((prior) => (
+                    <SelectItem key={prior.priorityId} value={prior.priority}>
+                      {prior.priority}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <span className="text-lg">Deadline</span>
               <div className="flex flex-col gap-3">
                 <Popover open={open} onOpenChange={setOpen}>
