@@ -48,12 +48,44 @@ const HomePage = () => {
         ...prev,
         highPriorityData: [...prev.highPriorityData, ...response.data.data],
       }));
-      console.log("Data Tersebut: ", response.data.data);
+      console.log("Data For High Priority Task: ", response.data.data);
+    }
+  };
+
+  const fetchLowPriorityData = async () => {
+    const response = await axios.get(
+      "http://localhost:3000/api/task/lowpriority"
+    );
+    if (!response.data) {
+      console.log("No Data Found");
+    } else {
+      setData((prev) => ({
+        ...prev,
+        lowPriorityData: [...prev.lowPriorityData, ...response.data.data],
+      }));
+      console.log("Data For Low Priority Task: ", response.data.data);
+    }
+  };
+
+  const fetchMediumPriorityData = async () => {
+    const response = await axios.get(
+      "http://localhost:3000/api/task/mediumPriority"
+    );
+    if (!response.data) {
+      console.log("No Data Found");
+    } else {
+      setData((prev) => ({
+        ...prev,
+        mediumPriorityData: [...prev.mediumPriorityData, ...response.data.data],
+      }));
+      console.log("Data For Medium Priority Task: ", response.data.data);
     }
   };
 
   useEffect(() => {
     fetchHighPriorityData();
+    fetchLowPriorityData();
+    fetchMediumPriorityData();
   }, []);
 
   return (
