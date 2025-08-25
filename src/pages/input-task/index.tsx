@@ -27,9 +27,9 @@ enum PriorityEnum {
 }
 
 type Input = {
-  task: string;
-  priority: string;
-  deadline: string;
+  taskName: string;
+  priorityId: number;
+  deadlineAt: string;
 };
 
 interface PriorityProps {
@@ -50,8 +50,6 @@ const InputPage = () => {
 
   useEffect(() => {
     fetchPriorityData();
-    console.log(priority);
-    console.log("Tanggal: ", date);
   }, []);
 
   const {
@@ -60,7 +58,22 @@ const InputPage = () => {
     control,
     formState: { errors },
   } = useForm<Input>();
-  const onSubmit: SubmitHandler<Input> = (data) => console.log(data);
+
+  const onSubmit: SubmitHandler<Input> = async (data) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/api/task/createtask",
+        data
+      );
+      console.log("Success Input Data : ", response.data);
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        console.error("API Error : ", error.response?.data);
+      } else {
+        console.error("Unexpected Error : ", error);
+      }
+    }
+  };
 
   return (
     <div className="w-screen h-screen bg-black text-white">
@@ -70,19 +83,21 @@ const InputPage = () => {
             <Stack className="bg-white/50 p-5 rounded-md text-black gap-3">
               <span className="text-lg">Task Name</span>
               <InputForm
-                defaultValue="test"
                 className="w-full h-[2rem] p-3"
-                {...register("task", { required: true })}
+                {...register("taskName", {
+                  required: true,
+                })}
               />
               <span className="text-lg">Priority</span>
+
               <Controller
                 control={control}
-                name="priority"
-                defaultValue="Low"
+                name="priorityId"
+                defaultValue={priority[0]?.priorityId}
                 render={({ field }) => (
                   <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    onValueChange={(val) => field.onChange(Number(val))}
+                    defaultValue={String(field.value)}
                   >
                     <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
                       <SelectValue placeholder="Priority" />
@@ -91,7 +106,7 @@ const InputPage = () => {
                       {priority.map((prior) => (
                         <SelectItem
                           key={prior.priorityId}
-                          value={prior.priority}
+                          value={String(prior.priorityId)}
                         >
                           {prior.priority}
                         </SelectItem>
@@ -105,7 +120,7 @@ const InputPage = () => {
               <div className="flex flex-col gap-3">
                 <Controller
                   control={control}
-                  name="deadline"
+                  name="deadlineAt"
                   defaultValue={new Date().toLocaleDateString()}
                   render={({ field }) => (
                     <Popover open={open} onOpenChange={setOpen}>
@@ -114,12 +129,15 @@ const InputPage = () => {
                           id="date"
                           className="w-full bg-black text-white justify-between font-normal"
                         >
-                          {date
-                            ? date.toLocaleDateString("en-US", {
-                                month: "2-digit",
-                                day: "2-digit",
-                                year: "numeric",
-                              })
+                          {field.value
+                            ? new Date(field.value).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  year: "numeric",
+                                }
+                              )
                             : new Date().toLocaleDateString("en-US", {
                                 month: "2-digit",
                                 day: "2-digit",
@@ -138,6 +156,13 @@ const InputPage = () => {
                           captionLayout="dropdown"
                           onSelect={(date) => {
                             setDate(date);
+                            field.onChange(
+                              date?.toLocaleString("en-US", {
+                                month: "2-digit",
+                                day: "2-digit",
+                                year: "numeric",
+                              })
+                            );
                             setOpen(false);
                           }}
                         />
