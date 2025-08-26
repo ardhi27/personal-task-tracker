@@ -3,17 +3,20 @@ import Group from "@/components/Group";
 import Box from "@/components/BoxTask";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Trash } from "lucide-react";
 
-// "taskId": 10,
-//             "taskName": "Baca Buku Atomic Habit",
-//             "createdAt": "2025-08-24T00:00:00.000Z",
-//             "deadlineAt": "2025-08-12T00:00:00.000Z",
-//             "priorityId": 2,
-//             "priority": {
-//                 "priorityId": 2,
-//                 "priority": "Medium"
-//             }
-//         },
 interface TaskData {
   taskName: string;
   createdAt: string;
@@ -92,25 +95,46 @@ const HomePage = () => {
     <Stack className="w-screen h-screen bg-black">
       <div className="w-full h-full flex justify-center items-center">
         <Group className="gap-x-10">
-          <Box className="bg-green-500">
-            {taskData.highPriorityData.map((data: TaskData) => (
-              <Group key={data.taskId}>
+          <Box className="bg-green-500 p-3">
+            {taskData.lowPriorityData.map((data: TaskData) => (
+              <Group key={data.taskId} className="justify-between items-center">
                 <span>{data.taskName}</span>
-                <span>DELETE</span>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button className="w-[2rem] h-[2rem]" variant="destructive">
+                      <Trash size={32} />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete your task data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </Group>
             ))}
           </Box>
-          <Box className="bg-yellow-500">
+          <Box className="bg-yellow-500 p-3">
             {taskData.mediumPriorityData.map((data: TaskData) => (
-              <Group key={data.taskId}>
+              <Group key={data.taskId} className="justify-between">
                 <span>{data.taskName}</span>
                 <span>DELETE</span>
               </Group>
             ))}
           </Box>
-          <Box className="bg-red-500">
+          <Box className="bg-red-500 p-3">
             {taskData.highPriorityData.map((data: TaskData) => (
-              <Group key={data.taskId}>
+              <Group key={data.taskId} className="justify-between">
                 <span>{data.taskName}</span>
                 <span>DELETE</span>
               </Group>
