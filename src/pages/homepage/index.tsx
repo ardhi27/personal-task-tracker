@@ -100,8 +100,22 @@ const HomePage = () => {
               </Group>
             ))}
           </Box>
-          <Box className="bg-yellow-500">a</Box>
-          <Box className="bg-red-500">a</Box>
+          <Box className="bg-yellow-500">
+            {taskData.mediumPriorityData.map((data: TaskData) => (
+              <Group key={data.taskId}>
+                <span>{data.taskName}</span>
+                <span>DELETE</span>
+              </Group>
+            ))}
+          </Box>
+          <Box className="bg-red-500">
+            {taskData.highPriorityData.map((data: TaskData) => (
+              <Group key={data.taskId}>
+                <span>{data.taskName}</span>
+                <span>DELETE</span>
+              </Group>
+            ))}
+          </Box>
         </Group>
       </div>
     </Stack>
