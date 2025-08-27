@@ -20,12 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-enum PriorityEnum {
-  high = "high",
-  medium = "medium",
-  low = "low",
-}
-
 type Input = {
   taskName: string;
   priorityId: number;

@@ -25,10 +25,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Pen, Trash } from "lucide-react";
+import { ChevronDownIcon, Pen, Trash } from "lucide-react";
 import Input from "@/components/Input";
 import { Label } from "@/components/ui/label";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 interface TaskData {
   taskName: string;
   createdAt: string;
@@ -40,10 +54,22 @@ interface TaskData {
     priority: string;
   };
 }
+
+type UpdateData = {
+  taskName: string;
+  priorityId: number;
+  deadlineAt: string;
+  taskId: number;
+};
 type TaskState = {
   highPriorityData: TaskData[];
   mediumPriorityData: TaskData[];
   lowPriorityData: TaskData[];
+};
+
+type PriorityProps = {
+  priorityId: number;
+  priority: string;
 };
 const HomePage = () => {
   const [taskData, setData] = useState<TaskState>({
@@ -51,6 +77,41 @@ const HomePage = () => {
     lowPriorityData: [],
     mediumPriorityData: [],
   });
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [priority, setPriority] = useState<PriorityProps[]>([]);
+  const [taskId, setTaskId] = useState<number | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<UpdateData>();
+
+  const onSubmit: SubmitHandler<UpdateData> = async (data) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:3000/api/task/${taskId}`,
+        data
+      );
+      console.log("Success Update Data : ", response.data);
+      window.location.reload();
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        console.error("API Error : ", error.response?.data);
+      } else {
+        console.error("Unexpected Error : ", error);
+      }
+    }
+  };
+
+  const fetchPriorityData = async () => {
+    const response = await axios.get("http://localhost:3000/api/priority");
+    const data = response.data;
+    setPriority(data);
+    console.log(data);
+  };
 
   const deleteData = async (id: Number) => {
     const response = await axios.delete(`http://localhost:3000/api/task/${id}`);
@@ -108,6 +169,7 @@ const HomePage = () => {
     fetchHighPriorityData();
     fetchLowPriorityData();
     fetchMediumPriorityData();
+    fetchPriorityData();
   }, []);
 
   return (
@@ -120,16 +182,21 @@ const HomePage = () => {
                 <span>{data.taskName}</span>
                 <Group className="gap-x-2">
                   <Dialog>
-                    <form>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="default"
-                          className="bg-blue-500 w-[2rem] h-[2rem]"
-                        >
-                          <Pen size={32} />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="default"
+                        className="bg-blue-500 w-[2rem] h-[2rem]"
+                      >
+                        <Pen size={32} />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <form onSubmit={handleSubmit(onSubmit)}>
+                        <Input
+                          type="hidden"
+                          defaultValue={data.taskId}
+                          {...register("taskId")}
+                        />
                         <DialogHeader>
                           <DialogTitle>Edit profile</DialogTitle>
                           <DialogDescription>
@@ -139,30 +206,113 @@ const HomePage = () => {
                         </DialogHeader>
                         <div className="grid gap-4">
                           <div className="grid gap-3">
-                            <Label htmlFor="name-1">Name</Label>
+                            <Label htmlFor="name-1">Task Name</Label>
                             <Input
                               id="name-1"
-                              name="name"
-                              defaultValue="Pedro Duarte"
+                              defaultValue="Input Your Task"
+                              {...register("taskName", {
+                                required: true,
+                              })}
                             />
                           </div>
                           <div className="grid gap-3">
-                            <Label htmlFor="username-1">Username</Label>
-                            <Input
-                              id="username-1"
-                              name="username"
-                              defaultValue="@peduarte"
+                            <Label htmlFor="username-1">Priority</Label>
+                            <Controller
+                              control={control}
+                              name="priorityId"
+                              defaultValue={priority[0]?.priorityId}
+                              render={({ field }) => (
+                                <Select
+                                  onValueChange={(val) =>
+                                    field.onChange(Number(val))
+                                  }
+                                  defaultValue={String(field.value)}
+                                >
+                                  <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
+                                    <SelectValue placeholder="Priority" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {priority.map((prior) => (
+                                      <SelectItem
+                                        key={prior.priorityId}
+                                        value={String(prior.priorityId)}
+                                      >
+                                        {prior.priority}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             />
                           </div>
+                        </div>
+                        <div className="grid gap-3">
+                          <Label>Deadline</Label>
+                          <Controller
+                            control={control}
+                            name="deadlineAt"
+                            defaultValue={new Date().toLocaleDateString()}
+                            render={({ field }) => (
+                              <Popover open={open} onOpenChange={setOpen}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    id="date"
+                                    className="w-full bg-black text-white justify-between font-normal"
+                                  >
+                                    {field.value
+                                      ? new Date(
+                                          field.value
+                                        ).toLocaleDateString("en-US", {
+                                          month: "2-digit",
+                                          day: "2-digit",
+                                          year: "numeric",
+                                        })
+                                      : new Date().toLocaleDateString("en-US", {
+                                          month: "2-digit",
+                                          day: "2-digit",
+                                          year: "numeric",
+                                        })}
+                                    <ChevronDownIcon />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-auto overflow-hidden p-0"
+                                  align="start"
+                                >
+                                  <Calendar
+                                    mode="single"
+                                    selected={date}
+                                    captionLayout="dropdown"
+                                    onSelect={(date) => {
+                                      setDate(date);
+                                      field.onChange(
+                                        date?.toLocaleString("en-US", {
+                                          month: "2-digit",
+                                          day: "2-digit",
+                                          year: "numeric",
+                                        })
+                                      );
+                                      setOpen(false);
+                                    }}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                          />
                         </div>
                         <DialogFooter>
                           <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>
                           </DialogClose>
-                          <Button type="submit">Save changes</Button>
+                          <Button
+                            onClick={() => setTaskId(data.taskId)}
+                            type="submit"
+                          >
+                            Save changes
+                          </Button>
                         </DialogFooter>
-                      </DialogContent>
-                    </form>
+                      </form>
+                    </DialogContent>
                   </Dialog>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -204,16 +354,21 @@ const HomePage = () => {
                   <span>{data.taskName}</span>
                   <Group className="gap-x-2">
                     <Dialog>
-                      <form>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="default"
-                            className="bg-blue-500 w-[2rem] h-[2rem]"
-                          >
-                            <Pen size={32} />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="default"
+                          className="bg-blue-500 w-[2rem] h-[2rem]"
+                        >
+                          <Pen size={32} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <form onSubmit={handleSubmit(onSubmit)}>
+                          <Input
+                            type="hidden"
+                            defaultValue={data.taskId}
+                            {...register("taskId")}
+                          />
                           <DialogHeader>
                             <DialogTitle>Edit profile</DialogTitle>
                             <DialogDescription>
@@ -223,30 +378,116 @@ const HomePage = () => {
                           </DialogHeader>
                           <div className="grid gap-4">
                             <div className="grid gap-3">
-                              <Label htmlFor="name-1">Name</Label>
+                              <Label htmlFor="name-1">Task Name</Label>
                               <Input
                                 id="name-1"
-                                name="name"
-                                defaultValue="Pedro Duarte"
+                                defaultValue="Input Your Task"
+                                {...register("taskName", {
+                                  required: true,
+                                })}
                               />
                             </div>
                             <div className="grid gap-3">
-                              <Label htmlFor="username-1">Username</Label>
-                              <Input
-                                id="username-1"
-                                name="username"
-                                defaultValue="@peduarte"
+                              <Label htmlFor="username-1">Priority</Label>
+                              <Controller
+                                control={control}
+                                name="priorityId"
+                                defaultValue={priority[0]?.priorityId}
+                                render={({ field }) => (
+                                  <Select
+                                    onValueChange={(val) =>
+                                      field.onChange(Number(val))
+                                    }
+                                    defaultValue={String(field.value)}
+                                  >
+                                    <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
+                                      <SelectValue placeholder="Priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {priority.map((prior) => (
+                                        <SelectItem
+                                          key={prior.priorityId}
+                                          value={String(prior.priorityId)}
+                                        >
+                                          {prior.priority}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
                               />
                             </div>
+                          </div>
+                          <div className="grid gap-3">
+                            <Label>Deadline</Label>
+                            <Controller
+                              control={control}
+                              name="deadlineAt"
+                              defaultValue={new Date().toLocaleDateString()}
+                              render={({ field }) => (
+                                <Popover open={open} onOpenChange={setOpen}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="date"
+                                      className="w-full bg-black text-white justify-between font-normal"
+                                    >
+                                      {field.value
+                                        ? new Date(
+                                            field.value
+                                          ).toLocaleDateString("en-US", {
+                                            month: "2-digit",
+                                            day: "2-digit",
+                                            year: "numeric",
+                                          })
+                                        : new Date().toLocaleDateString(
+                                            "en-US",
+                                            {
+                                              month: "2-digit",
+                                              day: "2-digit",
+                                              year: "numeric",
+                                            }
+                                          )}
+                                      <ChevronDownIcon />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-auto overflow-hidden p-0"
+                                    align="start"
+                                  >
+                                    <Calendar
+                                      mode="single"
+                                      selected={date}
+                                      captionLayout="dropdown"
+                                      onSelect={(date) => {
+                                        setDate(date);
+                                        field.onChange(
+                                          date?.toLocaleString("en-US", {
+                                            month: "2-digit",
+                                            day: "2-digit",
+                                            year: "numeric",
+                                          })
+                                        );
+                                        setOpen(false);
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            />
                           </div>
                           <DialogFooter>
                             <DialogClose asChild>
                               <Button variant="outline">Cancel</Button>
                             </DialogClose>
-                            <Button type="submit">Save changes</Button>
+                            <Button
+                              onClick={() => setTaskId(data.taskId)}
+                              type="submit"
+                            >
+                              Save changes
+                            </Button>
                           </DialogFooter>
-                        </DialogContent>
-                      </form>
+                        </form>
+                      </DialogContent>
                     </Dialog>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -290,16 +531,21 @@ const HomePage = () => {
                   <span>{data.taskName}</span>
                   <Group className="gap-x-4  items-center">
                     <Dialog>
-                      <form>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="default"
-                            className="bg-blue-500 w-[2rem] h-[2rem]"
-                          >
-                            <Pen size={32} />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="default"
+                          className="bg-blue-500 w-[2rem] h-[2rem]"
+                        >
+                          <Pen size={32} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <form onSubmit={handleSubmit(onSubmit)}>
+                          <Input
+                            type="hidden"
+                            defaultValue={data.taskId}
+                            {...register("taskId")}
+                          />
                           <DialogHeader>
                             <DialogTitle>Edit profile</DialogTitle>
                             <DialogDescription>
@@ -309,30 +555,116 @@ const HomePage = () => {
                           </DialogHeader>
                           <div className="grid gap-4">
                             <div className="grid gap-3">
-                              <Label htmlFor="name-1">Name</Label>
+                              <Label htmlFor="name-1">Task Name</Label>
                               <Input
                                 id="name-1"
-                                name="name"
-                                defaultValue="Pedro Duarte"
+                                defaultValue="Input Your Task"
+                                {...register("taskName", {
+                                  required: true,
+                                })}
                               />
                             </div>
                             <div className="grid gap-3">
-                              <Label htmlFor="username-1">Username</Label>
-                              <Input
-                                id="username-1"
-                                name="username"
-                                defaultValue="@peduarte"
+                              <Label htmlFor="username-1">Priority</Label>
+                              <Controller
+                                control={control}
+                                name="priorityId"
+                                defaultValue={priority[0]?.priorityId}
+                                render={({ field }) => (
+                                  <Select
+                                    onValueChange={(val) =>
+                                      field.onChange(Number(val))
+                                    }
+                                    defaultValue={String(field.value)}
+                                  >
+                                    <SelectTrigger className="w-full  data-[placeholder]:text-white  ">
+                                      <SelectValue placeholder="Priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {priority.map((prior) => (
+                                        <SelectItem
+                                          key={prior.priorityId}
+                                          value={String(prior.priorityId)}
+                                        >
+                                          {prior.priority}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
                               />
                             </div>
+                          </div>
+                          <div className="grid gap-3">
+                            <Label>Deadline</Label>
+                            <Controller
+                              control={control}
+                              name="deadlineAt"
+                              defaultValue={new Date().toLocaleDateString()}
+                              render={({ field }) => (
+                                <Popover open={open} onOpenChange={setOpen}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      id="date"
+                                      className="w-full bg-black text-white justify-between font-normal"
+                                    >
+                                      {field.value
+                                        ? new Date(
+                                            field.value
+                                          ).toLocaleDateString("en-US", {
+                                            month: "2-digit",
+                                            day: "2-digit",
+                                            year: "numeric",
+                                          })
+                                        : new Date().toLocaleDateString(
+                                            "en-US",
+                                            {
+                                              month: "2-digit",
+                                              day: "2-digit",
+                                              year: "numeric",
+                                            }
+                                          )}
+                                      <ChevronDownIcon />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-auto overflow-hidden p-0"
+                                    align="start"
+                                  >
+                                    <Calendar
+                                      mode="single"
+                                      selected={date}
+                                      captionLayout="dropdown"
+                                      onSelect={(date) => {
+                                        setDate(date);
+                                        field.onChange(
+                                          date?.toLocaleString("en-US", {
+                                            month: "2-digit",
+                                            day: "2-digit",
+                                            year: "numeric",
+                                          })
+                                        );
+                                        setOpen(false);
+                                      }}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            />
                           </div>
                           <DialogFooter>
                             <DialogClose asChild>
                               <Button variant="outline">Cancel</Button>
                             </DialogClose>
-                            <Button type="submit">Save changes</Button>
+                            <Button
+                              onClick={() => setTaskId(data.taskId)}
+                              type="submit"
+                            >
+                              Save changes
+                            </Button>
                           </DialogFooter>
-                        </DialogContent>
-                      </form>
+                        </form>
+                      </DialogContent>
                     </Dialog>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
