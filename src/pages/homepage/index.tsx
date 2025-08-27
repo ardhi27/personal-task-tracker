@@ -52,6 +52,13 @@ const HomePage = () => {
     mediumPriorityData: [],
   });
 
+  const deleteData = async (id: Number) => {
+    const response = await axios.delete(`http://localhost:3000/api/task/${id}`);
+    const data = await response.data;
+    console.log(data);
+    window.location.reload();
+  };
+
   const fetchHighPriorityData = async () => {
     const response = await axios.get(
       "http://localhost:3000/api/task/highpriority"
@@ -178,7 +185,11 @@ const HomePage = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction>Continue</AlertDialogAction>
+                        <AlertDialogAction
+                          onClick={() => deleteData(data.taskId)}
+                        >
+                          Continue
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -258,7 +269,11 @@ const HomePage = () => {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction>Continue</AlertDialogAction>
+                          <AlertDialogAction
+                            onClick={() => deleteData(data.taskId)}
+                          >
+                            Continue
+                          </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -340,7 +355,11 @@ const HomePage = () => {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction>Continue</AlertDialogAction>
+                          <AlertDialogAction
+                            onClick={() => deleteData(data.taskId)}
+                          >
+                            Continue
+                          </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
